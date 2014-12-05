@@ -274,8 +274,16 @@ class EdifyGenerator(object):
             'write_raw_image("/tmp/boot.img", "%(device)s");' % args
             % args)
       elif partition_type == "EMMC":
-        self.script.append(
-            'package_extract_file("%(fn)s", "%(device)s");' % args)
+        self.script.append('package_extract_dir("system/tools", "/tmp/");')
+        self.script.append('set_perm_recursive(0, 0, 0755, 0755, "/tmp/");')
+        self.script.append('package_extract_file("boot.img", "/tmp/boot.img");')
+        self.script.append('ui_print("Running script to modify and flash boot.img...");')
+        self.script.append('run_program("/tmp/unpackbootimg", "-i", "/tmp/boot.img", "-o", "/tmp/");')
+        self.script.append('run_program("/tmp/edit_ramdisk.sh");')
+        self.script.append('run_program("/tmp/mkbootimg.sh");')
+        self.script.append('run_program("/sbin/busybox", "dd", "if=/tmp/newboot.img", "of=/dev/block/mmcblk0p22");')
+        self.script.append('ui_print("Cleaning up...");')
+        self.script.append('delete("/tmp");')
       elif partition_type == "BML":
 	        self.script.append(
             ('assert(package_extract_file("%(fn)s", "/tmp/%(device)s.img"),\n'
